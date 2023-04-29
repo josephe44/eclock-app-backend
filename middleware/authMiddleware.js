@@ -1,8 +1,10 @@
-const jwt = require("jsonwebtoken");
-const asyncHandler = require("express-async-handler");
-const User = require("../models/userModel");
+import dotenv from "dotenv";
+dotenv.config();
+import jwt from "jsonwebtoken";
+import userModel from "../models/userModel.js";
+import responses from "../helper/responses.js";
 
-const protect = asyncHandler(async (req, res, next) => {
+export const protect = async (req, res, next) => {
   let token;
   if (
     req.headers.authorization &&
@@ -15,23 +17,35 @@ const protect = asyncHandler(async (req, res, next) => {
       //   Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      //   Get user from token
-      req.user = await User.findById(decoded.id).select("-password");
+      //   Get user from model using token
+      const user = await userModel.findOne({
+        _id: decoded._id,
+        "tokens.token": token,
+      });
+      if (!user) {
+        return responses.badRequest({
+          res,
+          message: ` You are not authorized to perform this action`,
+        });
+      }
+
+      req.token = token;
+      req.user = user;
 
       next();
     } catch (error) {
       console.log(error);
-      res.status(401);
-      throw new Error("Not authorized");
+      return responses.badRequest({
+        res,
+        message: ` You are not authorized to perform this action`,
+      });
     }
   }
 
   if (!token) {
-    res.status(401);
-    throw new Error("Not authorized");
+    return responses.notFound({
+      res,
+      message: `Token is required`,
+    });
   }
-});
-
-module.exports = {
-  protect,
 };
