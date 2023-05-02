@@ -3,20 +3,22 @@ import status from "http-status";
 // read this docs to see list of all status code
 // https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 
-export const successfulRequest = ({ res, message, entity, data }) => {
+export const successfulRequest = ({ res, message, entity, data, token }) => {
   res.status(status.OK).send({
     status: true,
     message,
     entity,
+    token,
     data,
   });
 };
 
-export const resourceCreated = ({ res, message, entity, data }) => {
+export const resourceCreated = ({ res, message, entity, data, token }) => {
   res.status(status.CREATED).send({
     status: true,
     message,
     entity,
+    token,
     data,
   });
 };

@@ -1,5 +1,6 @@
 import responses from "../../helper/responses.js";
 import userModel from "../../models/userModel.js";
+import bcrypt from "bcryptjs";
 
 export const handleCreateUser = async (req, res) => {
   const { name, email, password } = req.body;
@@ -10,7 +11,7 @@ export const handleCreateUser = async (req, res) => {
     return responses.resourceCreated({
       res,
       message: `user created`,
-      entity: token,
+      token: token,
       data: newUser,
     });
   } catch (error) {
@@ -48,23 +49,27 @@ export const handleCreateUser = async (req, res) => {
 export const handleUserLogin = async (req, res) => {
   const { email, password } = req.body;
   try {
-    // check if the request is empty
+    // check if the request body is empty
     if (!email || !password) {
       responses.badRequest({
         res,
         message: `username and password are required`,
       });
     }
+
     const user = await userModel.findByCredentials(email, password);
     const token = await user.generateAuthToken();
     return responses.successfulRequest({
       res,
       message: `user has successful login`,
-      entity: token,
+      token: token,
       data: user,
     });
   } catch (error) {
-    res.status(400).json({ message: "Invalid username or password" });
+    return responses.badRequest({
+      res,
+      message: error.message,
+    });
   }
 };
 
@@ -80,7 +85,10 @@ export const handleUserLogout = async (req, res) => {
       message: `user Logged out successfully`,
     });
   } catch (e) {
-    res.status(500).send();
+    responses.badRequest({
+      res,
+      message: `Logout failed`,
+    });
   }
 };
 
@@ -89,5 +97,84 @@ export const handleGetLoggedInUserProfile = async (req, res) => {
     res.status(200).send(req.user);
   } catch (e) {
     res.status(500).send();
+  }
+};
+
+// Update a user profile
+export const handleUpdateUserProfile = async (req, res) => {
+  try {
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ["bio", "avatar"];
+    const isValidOperation = updates.every((update) => {
+      return allowedUpdates.includes(update);
+    });
+
+    if (!isValidOperation)
+      return responses.badRequest({
+        res,
+        message: `cross check the fields you are trying to update`,
+      });
+    updates.forEach((update) => {
+      req.user[update] = req.body[update];
+    });
+    await req.user.save();
+    return responses.resourceCreated({
+      res,
+      message: `user Logged out successfully`,
+      data: req.user,
+    });
+  } catch (e) {
+    responses.badRequest({
+      res,
+      message: `update failed`,
+    });
+  }
+};
+
+// change a user password
+export const handleChangePassword = async (req, res) => {
+  const user = req.user;
+  console.log(user);
+
+  try {
+    const { old_password, new_password } = req.body;
+
+    // check if the request is empty
+    if (!old_password || !new_password) {
+      responses.badRequest({
+        res,
+        message: `old_password and new_password are required`,
+      });
+    }
+
+    const is_match = await bcrypt.compare(old_password, user.password);
+    const same_password = await bcrypt.compare(new_password, user.password);
+
+    if (!is_match)
+      return responses.badRequest({
+        res,
+        message: "Incorrect Password",
+        error: "Could not update password",
+      });
+
+    if (same_password)
+      return responses.badRequest({
+        res,
+        message: "New Password cannot be the same as the old password",
+        error: "Could not update password",
+      });
+
+    user.password = new_password;
+    await user.save();
+
+    responses.successfulRequest({
+      res,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    responses.badRequest({
+      res,
+      message: `server error`,
+    });
   }
 };

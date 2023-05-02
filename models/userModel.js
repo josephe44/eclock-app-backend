@@ -3,6 +3,7 @@ import validator from "validator";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const sharedProps = {
@@ -30,6 +31,12 @@ const userSchema = new mongoose.Schema(
     password: {
       ...sharedProps,
     },
+    bio: {
+      type: String,
+    },
+    avatar: {
+      type: String,
+    },
     tokens: [
       {
         token: {
@@ -55,15 +62,20 @@ userSchema.pre("save", async function (next) {
 
 // check if the credentials already exist in the database
 userSchema.statics.findByCredentials = async function (email, password) {
-  const user = await userModel.findOne({ email });
-  if (!user) {
-    throw new Error("Incorrect Email or Password");
+  try {
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      throw new Error("Incorrect Email or Password");
+    }
+    console.log(user);
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new Error("Incorrect Email or Password");
+    }
+    return user;
+  } catch (error) {
+    throw error;
   }
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    throw new Error("Incorrect Email or Password");
-  }
-  return user;
 };
 
 // This generate tokens for all new users
