@@ -91,11 +91,14 @@ userSchema.methods.generateAuthToken = async function () {
 userSchema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
+  userObject.id = userObject._id;
 
+  delete userObject._id;
   delete userObject.password;
   delete userObject.tokens;
   delete userObject.createdAt;
   delete userObject.updatedAt;
+  delete userObject.__v;
   return userObject;
 };
 
