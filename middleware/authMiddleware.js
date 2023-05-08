@@ -1,11 +1,10 @@
-import dotenv from "dotenv";
-dotenv.config();
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 import responses from "../helper/responses.js";
 
 export const protect = async (req, res, next) => {
   let token;
+
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
