@@ -8,6 +8,7 @@ import { connectDB } from "./config/db.js";
 import compress from "compression";
 import helmet from "helmet";
 import userRouter from "./api/userAuth/userRouter.js";
+import attendanceRouter from "./api/attendance/attendRouter.js";
 import responses from "./helper/responses.js";
 
 // assign a port
@@ -45,6 +46,7 @@ app.use(cors());
 
 // mount api v1 routes
 app.use("/api/auth/", userRouter);
+app.use("/api/attendance/", attendanceRouter);
 
 // Error Handler
 app.use(errorHandler);

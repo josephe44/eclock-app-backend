@@ -67,7 +67,6 @@ userSchema.statics.findByCredentials = async function (email, password) {
     if (!user) {
       throw new Error("Incorrect Email or Password");
     }
-    console.log(user);
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       throw new Error("Incorrect Email or Password");
@@ -101,6 +100,19 @@ userSchema.methods.toJSON = function () {
   delete userObject.__v;
   return userObject;
 };
+
+/* it a virtual database that allows mongoose to figure out the relationship.
+userTask - name of the virtual
+ref - name of the model
+localField - id of the user on the user model 
+foreignField - id of the user on the task model (owner)
+*/
+
+userSchema.virtual("userAttendance", {
+  ref: "attendance",
+  localField: "id",
+  foreignField: "user",
+});
 
 const userModel = mongoose.model("user", userSchema);
 export default userModel;
