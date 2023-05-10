@@ -1,5 +1,7 @@
+import { errorFormatter } from "../../helper/errorFormatter.js";
 import responses from "../../helper/responses.js";
 import attendanceModel from "../../models/attendance.js";
+
 import dayjs from "dayjs";
 
 export const handleClockIn = async (req, res) => {
@@ -7,17 +9,12 @@ export const handleClockIn = async (req, res) => {
   try {
     const user = req.user.id;
 
-    const currentDate = new Date();
-    const startDate = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      1
-    );
-    const endDate = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0
-    );
+    // get the time frame within 24hrs
+    const startDate = new Date();
+    startDate.setUTCHours(0, 0, 0, 0); // Set to the beginning of the current day
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1);
 
     // checks if the user has already clocked in for that day, throw an error if it true
     const clockInCheck = await attendanceModel.find({
@@ -31,7 +28,7 @@ export const handleClockIn = async (req, res) => {
         message: `you already clocked in for today`,
       });
 
-    //   proceed to create an event when there is no attendance
+    // proceed to create an event when there is no attendance
     const newEvent = attendanceModel({ eventType, location, user });
     await newEvent.save();
 
@@ -41,22 +38,13 @@ export const handleClockIn = async (req, res) => {
       data: newEvent,
     });
   } catch (error) {
-    if (error.errors) {
-      return responses.badRequest({
-        res,
-        message: `Could not create attendance, the '${Object.keys(
-          error.errors
-        )[0].replace(/_/g, " ")}' field is missing or badly formatted`,
-        error: `${Object.keys(error.errors)[0]
-          .charAt(0)
-          .toUpperCase()}${Object.keys(error.errors)[0]
-          .replace(/_/g, " ")
-          .slice(1)} is required`,
-      });
+    if (error) {
+      errorFormatter({ res, error });
     } else {
       return responses.badRequest({
         res,
         message: `clock in failed`,
+        error: error.message,
       });
     }
   }
@@ -66,17 +54,13 @@ export const handleClockOut = async (req, res) => {
   const { eventType, location } = req.body;
   try {
     const user = req.user.id;
-    const currentDate = new Date();
-    const startDate = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      1
-    );
-    const endDate = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0
-    );
+
+    // get the time frame within 24hrs
+    const startDate = new Date();
+    startDate.setUTCHours(0, 0, 0, 0); // Set to the beginning of the current day
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1);
 
     // checks if the user has already clocked in for that day , throw an error if it false
     const clockInCheck = await attendanceModel.find({
@@ -99,7 +83,7 @@ export const handleClockOut = async (req, res) => {
     if (clockOutCheck.length)
       return responses.badRequest({
         res,
-        message: `you already clocked out`,
+        message: `you already clocked out for today`,
       });
 
     // proceed to create an event when there is no attendance
@@ -113,21 +97,12 @@ export const handleClockOut = async (req, res) => {
     });
   } catch (error) {
     if (error.errors) {
-      return responses.badRequest({
-        res,
-        message: `Could not create attendance, the '${Object.keys(
-          error.errors
-        )[0].replace(/_/g, " ")}' field is missing or badly formatted`,
-        error: `${Object.keys(error.errors)[0]
-          .charAt(0)
-          .toUpperCase()}${Object.keys(error.errors)[0]
-          .replace(/_/g, " ")
-          .slice(1)} is required`,
-      });
+      errorFormatter({ res, error });
     } else {
       return responses.badRequest({
         res,
         message: `clock out failed`,
+        error: error.message,
       });
     }
   }
