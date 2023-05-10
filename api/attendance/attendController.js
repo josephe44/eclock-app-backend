@@ -86,6 +86,23 @@ export const handleClockOut = async (req, res) => {
         message: `you already clocked out for today`,
       });
 
+    // get 5pm time for the current day in seconds
+    const check5PM = new Date();
+    check5PM.setUTCHours(17, 0, 0, 0);
+    const check5PMInSeconds = Math.floor(check5PM.getTime() / 1000);
+    console.log(check5PMInSeconds);
+
+    // get end date time for the current day in seconds
+    const endDateInSeconds = Math.floor(endDate.getTime() / 1000);
+    console.log(endDateInSeconds);
+
+    if (check5PMInSeconds < endDateInSeconds) {
+      return responses.badRequest({
+        res,
+        message: `you cannot clock out at this time`,
+      });
+    }
+
     // proceed to create an event when there is no attendance
     const newEvent = attendanceModel({ eventType, location, user });
     await newEvent.save();
