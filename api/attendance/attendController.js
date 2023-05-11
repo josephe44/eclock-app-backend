@@ -93,10 +93,11 @@ export const handleClockOut = async (req, res) => {
     console.log(check5PMInSeconds);
 
     // get end date time for the current day in seconds
-    const endDateInSeconds = Math.floor(endDate.getTime() / 1000);
-    console.log(endDateInSeconds);
+    const today = new Date();
+    const currentDateInSeconds = Math.floor(today.getTime() / 1000);
 
-    if (check5PMInSeconds < endDateInSeconds) {
+    // check if the current date in seconds is less than the closing date , throw an error if it is true
+    if (currentDateInSeconds < check5PMInSeconds) {
       return responses.badRequest({
         res,
         message: `you cannot clock out at this time`,
