@@ -1,4 +1,6 @@
+import { errorFormatter } from "../../helper/errorFormatter.js";
 import responses from "../../helper/responses.js";
+import attendanceModel from "../../models/attendance.js";
 import userModel from "../../models/userModel.js";
 import bcrypt from "bcryptjs";
 
@@ -15,33 +17,7 @@ export const handleCreateUser = async (req, res) => {
       data: newUser,
     });
   } catch (error) {
-    if (error) {
-      if (error.errors)
-        return responses.badRequest({
-          res,
-          message: `Could not create user, the '${Object.keys(
-            error.errors
-          )[0].replace(/_/g, " ")}' field is missing or badly formatted`,
-          error: `${Object.keys(error.errors)[0]
-            .charAt(0)
-            .toUpperCase()}${Object.keys(error.errors)[0]
-            .replace(/_/g, " ")
-            .slice(1)} is required`,
-        });
-
-      if (error.keyValue)
-        return responses.badRequest({
-          res,
-          message: `Could not create user, ${
-            Object.keys(error.keyValue)[0]
-          } already exists`,
-          error: `${Object.keys(error.keyValue)[0]
-            .charAt(0)
-            .toUpperCase()}${Object.keys(error.keyValue)[0]
-            .replace(/_/g, " ")
-            .slice(1)} must be unique`,
-        });
-    }
+    errorFormatter({ error, res });
   }
 };
 
@@ -94,9 +70,36 @@ export const handleUserLogout = async (req, res) => {
 
 export const handleGetLoggedInUserProfile = async (req, res) => {
   try {
-    res.status(200).send(req.user);
+    // get the time frame within 24hrs
+    const startDate = new Date();
+    startDate.setUTCHours(0, 0, 0, 0); // Set to the beginning of the current day
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1);
+
+    // checks if the user has already clocked in for that day
+    const clockInCheck = await attendanceModel.find({
+      eventType: "clockin",
+      createdAt: { $gte: startDate, $lte: endDate },
+    });
+
+    // checks if the user has already clocked out for that day
+    const clockOutCheck = await attendanceModel.find({
+      eventType: "clockout",
+      createdAt: { $gte: startDate, $lte: endDate },
+    });
+
+    // return the user info and their clockin and clockout for that day
+    return responses.successfulRequest({
+      res,
+      message: `Fetched successfully`,
+      data: { user: req.user, clockInCheck, clockOutCheck },
+    });
   } catch (e) {
-    res.status(500).send();
+    responses.badRequest({
+      res,
+      message: `Failed to fetch user profile`,
+    });
   }
 };
 
@@ -175,6 +178,23 @@ export const handleChangePassword = async (req, res) => {
     responses.badRequest({
       res,
       message: `server error`,
+    });
+  }
+};
+
+// Fetch all users in the system
+export const handleFetchAllUsers = async (req, res) => {
+  try {
+    const users = await userModel.find();
+    return responses.resourceCreated({
+      res,
+      message: `Fetched all users in the app`,
+      data: users,
+    });
+  } catch (error) {
+    responses.badRequest({
+      res,
+      message: `fail to fetch all users`,
     });
   }
 };

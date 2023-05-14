@@ -8,6 +8,7 @@ import {
   handleGetLoggedInUserProfile,
   handleUpdateUserProfile,
   handleChangePassword,
+  handleFetchAllUsers,
 } from "./userController.js";
 import { protect } from "../../middleware/authMiddleware.js";
 
@@ -17,5 +18,6 @@ router.get("/logout", protect, handleUserLogout);
 router.get("/users/me", protect, handleGetLoggedInUserProfile);
 router.patch("/user/me/edit", protect, handleUpdateUserProfile);
 router.post("/changePassword", protect, handleChangePassword);
+router.get("/users", handleFetchAllUsers);
 
 export default router;
