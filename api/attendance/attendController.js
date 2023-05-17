@@ -101,7 +101,12 @@ export const handleClockOut = async (req, res) => {
       });
 
     // proceed to create an event when there is no attendance
-    const newEvent = attendanceModel({ eventType, location, user });
+    const newEvent = attendanceModel({
+      eventType,
+      location,
+      user,
+      status: true,
+    });
     await newEvent.save();
 
     return responses.resourceCreated({
