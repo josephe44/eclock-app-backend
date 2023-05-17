@@ -78,13 +78,13 @@ export const handleGetLoggedInUserProfile = async (req, res) => {
     endDate.setDate(startDate.getDate() + 1);
 
     // checks if the user has already clocked in for that day
-    const clockInCheck = await attendanceModel.find({
+    const clockInCheck = await attendanceModel.findOne({
       eventType: "clockin",
       createdAt: { $gte: startDate, $lte: endDate },
     });
 
     // checks if the user has already clocked out for that day
-    const clockOutCheck = await attendanceModel.find({
+    const clockOutCheck = await attendanceModel.findOne({
       eventType: "clockout",
       createdAt: { $gte: startDate, $lte: endDate },
     });

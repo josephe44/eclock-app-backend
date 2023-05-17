@@ -1,6 +1,8 @@
+import { getCurrentHour } from "../../helper/compareTime.js";
 import { errorFormatter } from "../../helper/errorFormatter.js";
 import responses from "../../helper/responses.js";
 import attendanceModel from "../../models/attendance.js";
+import { compareAsc } from "date-fns";
 
 import dayjs from "dayjs";
 
@@ -29,7 +31,12 @@ export const handleClockIn = async (req, res) => {
       });
 
     // proceed to create an event when there is no attendance
-    const newEvent = attendanceModel({ eventType, location, user });
+    const newEvent = attendanceModel({
+      eventType,
+      location,
+      user,
+      status: true,
+    });
     await newEvent.save();
 
     return responses.resourceCreated({
@@ -63,46 +70,35 @@ export const handleClockOut = async (req, res) => {
     endDate.setDate(startDate.getDate() + 1);
 
     // checks if the user has already clocked in for that day , throw an error if it false
-    const clockInCheck = await attendanceModel.find({
+    const clockInCheck = await attendanceModel.findOne({
       eventType: "clockin",
       createdAt: { $gte: startDate, $lte: endDate },
     });
 
-    if (!clockInCheck.length)
+    if (!clockInCheck)
       return responses.badRequest({
         res,
         message: `you need to be clocked in before performing this operation`,
       });
 
     // checks if the user has already clocked out for that day, throw an error if it true
-    const clockOutCheck = await attendanceModel.find({
+    const clockOutCheck = await attendanceModel.findOne({
       eventType: "clockout",
       createdAt: { $gte: startDate, $lte: endDate },
     });
 
-    if (clockOutCheck.length)
+    if (clockOutCheck)
       return responses.badRequest({
         res,
         message: `you already clocked out for today`,
       });
 
-    // get 5pm time for the current day in seconds
-    const check5PM = new Date();
-    check5PM.setUTCHours(17, 0, 0, 0);
-    const check5PMInSeconds = Math.floor(check5PM.getTime() / 1000);
-    console.log(check5PMInSeconds);
-
-    // get end date time for the current day in seconds
-    const today = new Date();
-    const currentDateInSeconds = Math.floor(today.getTime() / 1000);
-
-    // check if the current date in seconds is less than the closing date , throw an error if it is true
-    if (currentDateInSeconds < check5PMInSeconds) {
+    const { nowTime } = getCurrentHour();
+    if (nowTime < 17)
       return responses.badRequest({
         res,
-        message: `you cannot clock out at this time`,
+        message: `you can't clock in at this time`,
       });
-    }
 
     // proceed to create an event when there is no attendance
     const newEvent = attendanceModel({ eventType, location, user });
