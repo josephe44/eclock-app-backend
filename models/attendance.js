@@ -23,6 +23,10 @@ const attendanceSchema = new mongoose.Schema(
       required: true,
       ref: "user",
     },
+    status: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   {

@@ -106,7 +106,7 @@ userSchema.methods.toJSON = function () {
 userTask - name of the virtual
 ref - name of the model
 localField - id of the user on the user model 
-foreignField - id of the user on the task model (owner)
+foreignField - id of the user on the attendance model
 */
 
 userSchema.virtual("userAttendance", {
